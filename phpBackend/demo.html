@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Demo</title>
+    <script src="vue.global.js"></script>
+    <script src="marked.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .layout-container {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 300px;
+            background: #f5f7fa;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .ai-selector {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-left: 10px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+        }
+        .bot-message {
+            background-color: #f5f5f5;
+        }
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+        }
+        .message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .send-button {
+            padding: 10px 20px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .chat-history-item {
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .chat-history-item:hover {
+            background: #e3f2fd;
+        }
+        .chat-history-item.active {
+            background: #bbdefb;
+        }
+        .new-chat-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }        
+        .new-chat-btn, .clear-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .new-chat-btn {
+            background: #1976d2;
+            color: white;
+        }
+        .clear-btn {
+            background: #dc3545;
+            color: white;
+        }
+        .message img {
+            max-width: 100%;
+            height: auto;
+        }
+        .message a {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        .message a:hover {
+            text-decoration: underline;
+        }
+        .message pre {
+            background: #f8f9fa;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .message code {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .bot-message {
+            background-color: #f5f5f5;
+            position: relative;  /* 添加相对定位 */
+        }
+        /* 添加复制按钮样式 */
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 4px 8px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none;  /* 默认隐藏 */
+            font-size: 12px;
+        }
+        .bot-message:hover .copy-button {
+            display: block;  /* 鼠标悬浮时显示 */
+        }
+        .toast {
+            position: fixed;
+            top: 10%;
+            right: 20px;
+            transform: none;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+        /* 添加关闭按钮样式 */
+        .chat-history-item {
+            position: relative;  /* 添加相对定位 */
+        }
+        .close-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 4px 8px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none;
+            font-size: 12px;
+        }
+        .chat-history-item:hover .close-button {
+            display: block;
+        }
+        /* 添加标题编辑样式 */
+        .chat-title {
+            margin-bottom: 5px;
+            cursor: text;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        .chat-title:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .chat-title-input {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-size: 14px;
+            outline: none;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="layout-container">
+            <!-- 左侧导航栏 -->
+            <div class="sidebar">
+                <button class="new-chat-btn" @click="newChat">新建对话</button>
+                <button class="clear-btn" @click="clearHistory">清除全部历史记录</button>
+                <div 
+                    v-for="(chat, idx) in chatHistory" 
+                    :key="idx"
+                    class="chat-history-item"
+                    :class="{ active: currentChatIndex === idx }"
+                    @click="switchChat(idx)">
+                    <div 
+                        v-if="!chat.isEditing" 
+                        class="chat-title"
+                        @dblclick="startEditing(idx)">
+                        {{ chat.title || `对话 ${idx + 1}` }}
+                    </div>
+                    <input
+                        v-else
+                        type="text"
+                        class="chat-title-input"
+                        v-model="chat.title"
+                        @blur="stopEditing(idx)"
+                        @keyup.enter="stopEditing(idx)"
+                        ref="titleInput"
+                        @click.stop
+                    >
+                    <div style="font-size: 12px; color: #666;">
+                        {{ truncateText(chat.messages[chat.messages.length - 1]?.content || '暂无消息') }}
+                    </div>
+                    <button 
+                        class="close-button"
+                        @click.stop="deleteChat(idx)">
+                        删除
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右侧聊天区域 -->
+            <div class="main-content">
+                <div class="chat-header">
+                    <div>当前正在与 <strong>{{ currentAI }}</strong> 对话</div>
+                    <select v-model="currentAI" class="ai-selector">
+                        <option value="ChatGPT">ChatGPT</option>
+                        <option value="Deepseek">DeepSeek</option>
+                    </select>
+                </div>
+                <div class="chat-messages" ref="messageContainer">
+                    <div v-for="(message, index) in currentMessages" 
+                        :key="index" 
+                        :class="['message', message.isUser ? 'user-message' : 'bot-message']">
+                        <div v-html="renderMarkdown(message.content)"></div>
+                        <button 
+                            v-if="!message.isUser"
+                            class="copy-button"
+                            @click="copyMessage(message.content)">
+                            复制
+                        </button>
+                    </div>
+                    <div v-if="isStreaming" class="message bot-message">
+                        <div v-html="renderMarkdown(streamingContent)"></div>
+                        <span class="cursor">|</span>
+                    </div>
+                </div>
+                <div class="input-container">
+                    <input 
+                        type="text" 
+                        class="message-input"
+                        v-model="newMessage"
+                        @keyup.enter="sendMessage"
+                        placeholder="输入消息...">
+                    <button class="send-button" @click="sendMessage">发送</button>
+                </div>
+            </div>
+        </div>
+        <div v-if="showToast" class="toast">复制成功</div>
+    </div>
+
+    <script>
+        const { createApp, reactive, ref, nextTick, computed, watch } = Vue
+        createApp({
+            setup() {
+                const isStreaming = ref(false)
+                const streamingContent = ref('')
+
+                // 添加 AI 选择相关的状态
+                const currentAI = ref(localStorage.getItem('currentAI') || 'ChatGPT')
+
+                // 监听 AI 变化并保存
+                watch(currentAI, (newValue) => {
+                    localStorage.setItem('currentAI', newValue)
+                })
+
+                // 从 localStorage 读取历史记录，如果没有则使用默认值
+                const chatHistory = reactive(
+                    JSON.parse(localStorage.getItem('chatHistory')) || [{
+                        messages: [
+                            { content: '你好！我是AI助手，有什么可以帮你的吗？', isUser: false }
+                        ]
+                    }]
+                )
+                const currentChatIndex = ref(parseInt(localStorage.getItem('currentChatIndex')) || 0)
+                const newMessage = ref('')
+                const messageContainer = ref(null)
+
+                // 监听聊天历史变化，保存到 localStorage
+                const saveToLocalStorage = () => {
+                    localStorage.setItem('chatHistory', JSON.stringify(chatHistory))
+                    localStorage.setItem('currentChatIndex', currentChatIndex.value.toString())
+                }
+
+                const currentMessages = computed(() => {
+                    return chatHistory[currentChatIndex.value]?.messages || []
+                })
+                // 添加文本截断函数
+                const truncateText = (text) => {
+                    return text.length > 100 ? text.slice(0, 100) + '...' : text
+                }
+
+                const scrollToBottom = async () => {
+                    await nextTick()
+                    if (messageContainer.value) {
+                        messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+                    }
+                }
+
+                const newChat = () => {
+                    chatHistory.push({
+                        ai: currentAI.value,
+                        messages: [
+                            { content: '你好！我是AI助手，有什么可以帮你的吗？', isUser: false }
+                        ]
+                    })
+                    currentChatIndex.value = chatHistory.length - 1
+                    saveToLocalStorage() // 保存更改
+                }
+
+                const switchChat = (index) => {
+                    currentChatIndex.value = index
+                    saveToLocalStorage() // 保存更改
+                }
+
+                const clearHistory = () => {
+                                    if (confirm('确定要清除所有聊天记录吗？')) {
+                                        chatHistory.splice(0, chatHistory.length, {
+                                            messages: [
+                                                { content: '你好！我是AI助手，有什么可以帮你的吗？', isUser: false }
+                                            ]
+                                        })
+                                        currentChatIndex.value = 0
+                                        localStorage.removeItem('chatHistory')
+                                        localStorage.removeItem('currentChatIndex')
+                                    }
+                                }
+
+                const sendMessageToAI = async (messages) => {
+                    // 只取最近的5条消息
+                    const recentMessages = messages.slice(-5)
+
+                    try {
+                        const response = await fetch('chat.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                ai_type: currentAI.value.toUpperCase(),
+                                messages: recentMessages.map(msg => ({
+                                    role: msg.isUser ? 'user' : 'assistant',
+                                    content: msg.content
+                                }))
+                            })
+                        })
+
+                        if (!response.ok) throw new Error('API 请求失败')
+
+                        const reader = response.body.getReader()
+                        const decoder = new TextDecoder()
+                        isStreaming.value = true
+                        streamingContent.value = ''
+
+                        while (true) {
+                            const { done, value } = await reader.read()
+                            if (done) break
+
+                            const chunk = decoder.decode(value)
+                            const lines = chunk.split('\n').filter(line => line.trim() !== '')
+
+                            for (const line of lines) {
+                                if (line.includes('[DONE]')) continue
+                                if (line.startsWith('data: ')) {
+                                    try {
+                                        const data = JSON.parse(line.slice(6))
+                                        const content = data.choices[0]?.delta?.content || ''
+                                        streamingContent.value += content
+                                        scrollToBottom()
+                                    } catch (e) {
+                                        console.error('解析响应数据失败:', e)
+                                    }
+                                }
+                            }
+                        }
+
+                        chatHistory[currentChatIndex.value].messages.push({
+                            content: streamingContent.value,
+                            isUser: false
+                        })
+                        saveToLocalStorage()
+                        isStreaming.value = false
+                        streamingContent.value = ''
+
+                    } catch (error) {
+                        console.error('API 请求错误:', error)
+                        chatHistory[currentChatIndex.value].messages.push({
+                            content: '抱歉，发生了一些错误，请稍后重试。',
+                            isUser: false
+                        })
+                        saveToLocalStorage()
+                    }
+                }
+
+
+
+                const sendMessage = async () => {
+                    if (newMessage.value.trim() === '') return
+                    
+                    const userMessage = newMessage.value
+                    chatHistory[currentChatIndex.value].messages.push({
+                        content: userMessage,
+                        isUser: true
+                    })
+                    saveToLocalStorage()
+                    
+                    newMessage.value = ''
+                    scrollToBottom()
+                    
+                    await sendMessageToAI(chatHistory[currentChatIndex.value].messages)
+                }
+
+                // 添加 renderMarkdown 函数
+                const renderMarkdown = (content) => {
+                    try {
+                        return marked.parse(content)
+                    } catch (e) {
+                        console.error('Markdown parsing error:', e)
+                        return content
+                    }
+                }                
+
+                const showToast = ref(false)
+                const copyMessage = async (content) => {
+                    try {
+                        await navigator.clipboard.writeText(content)
+                        showToast.value = true
+                        setTimeout(() => {
+                            showToast.value = false
+                        }, 2000)  // 2秒后自动消失
+                    } catch (err) {
+                        console.error('复制失败:', err)
+                        alert('复制失败，请手动复制')
+                    }
+                }
+
+                const deleteChat = (index) => {
+                    if (chatHistory.length === 1) {
+                        alert('至少保留一个对话')
+                        return
+                    }
+                    chatHistory.splice(index, 1)
+                    if (currentChatIndex.value >= chatHistory.length) {
+                        currentChatIndex.value = chatHistory.length - 1
+                    }
+                    saveToLocalStorage()
+                }
+
+                const startEditing = (index) => {
+                    // 保存原始标题
+                    chatHistory[index].originalTitle = chatHistory[index].title || `对话 ${index + 1}`
+                    chatHistory[index].isEditing = true
+                    nextTick(() => {
+                        const inputs = document.querySelectorAll('.chat-title-input')
+                        inputs[index]?.focus()
+                    })
+                }
+
+                const stopEditing = (index) => {
+                    const chat = chatHistory[index]
+                    // 如果标题没有改变，恢复原标题
+                    if (chat.title === chat.originalTitle || !chat.title) {
+                        chat.title = chat.originalTitle
+                    }
+                    chat.isEditing = false
+                    delete chat.originalTitle  // 清理临时存储的原始标题
+                    saveToLocalStorage()
+                }
+
+                return {
+                    chatHistory,
+                    currentChatIndex,
+                    currentMessages,
+                    newMessage,
+                    messageContainer,
+                    currentAI,
+                    isStreaming,
+                    streamingContent,
+                    sendMessage,
+                    newChat,
+                    switchChat,
+                    clearHistory,  // 添加到返回对象中
+                    renderMarkdown,
+                    truncateText,
+                    copyMessage,
+                    showToast,
+                    deleteChat,
+                    startEditing,
+                    stopEditing,
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
