@@ -1,6 +1,6 @@
 # PHP AI Chat Web
 
-一个基于 PHP 和 Vue.js 开发的 AI 聊天应用，支持与 ChatGPT 和 DeepSeek 进行对话。适用于环境没人敢动，但是碰巧安装了PHP的服务器。
+一个基于 PHP 和 Vue.js 开发的 AI 聊天应用，支持与 ChatGPT 和 DeepSeek 进行对话。适用于环境没人敢动，但是碰巧安装了PHP的服务器。 
 
 ## 功能特点
 
