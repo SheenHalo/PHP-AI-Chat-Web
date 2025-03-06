@@ -39,12 +39,14 @@
 ```PHP
 $API_CONFIG = array(
     'CHATGPT' => array(
-        'url' => 'your-api-url',
-        'key' => 'your-api-key'
+        'url' => '',
+        'key' => '',
+        'model' => 'gpt-4o'
     ),
     'DEEPSEEK' => array(
-        'url' => 'your-api-url',
-        'key' => 'your-api-key'
+        'url' => '',
+        'key' => '',
+        'model' => 'deepseek-chat'
     )
 );
 ```
@@ -61,25 +63,27 @@ $API_CONFIG = array(
 2. 配置 API 密钥：
 在 NoBackend/demo.html 中配置你的 API 密钥：
 ```JS
-<script>
-    // API 配置
-    const API_CONFIG = {
-        CHATGPT: {
-            url: 'your-api-url',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'your-api-key' // 替换为你的 API key
-            }
-        },
-        DEEPSEEK: {
-            url: 'your-api-url',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'your-api-key' // 替换为你的 API key
+    <script>
+        // API 配置
+        const API_CONFIG = {
+            CHATGPT: {
+                url: '',
+                model: 'gpt-4o',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': '' // 替换为你的 API key
+                }
+            },
+            DEEPSEEK: {
+                url: '',
+                model: 'deepseek-chat',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': '' // 替换为你的 API key
+                }
             }
         }
-    }
-</script>
+    </script>
 ```
 3. 使用浏览器打开 demo.html
 4. 警告！这个方式非常危险，任何能够打开demo.html的人都可以看到你的 API 密钥。

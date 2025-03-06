@@ -13,12 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // API 配置
 $API_CONFIG = array(
     'CHATGPT' => array(
-        'url' => ‘’,
-        'key' => ‘’
+        'url' => '',
+        'key' => '',
+        'model' => 'gpt-4o'
     ),
     'DEEPSEEK' => array(
         'url' => '',
-        'key' => ‘’
+        'key' => '',
+        'model' => 'deepseek-chat'
     )
 );
 
@@ -34,7 +36,7 @@ if (!$data) {
 
 $ai_type = $data['ai_type'];
 $messages = $data['messages'];
-$model = $ai_type === 'CHATGPT' ? 'gpt-4o' : 'deepseek-chat';
+$model = $API_CONFIG[$ai_type]['model'];  // 使用配置中的模型名称
 
 if (!isset($API_CONFIG[$ai_type])) {
     http_response_code(400);
